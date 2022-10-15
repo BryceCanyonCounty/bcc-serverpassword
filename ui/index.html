@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div id="app">
+      <div class="wrapper" v-if="visible">
+          <div class="container" v-if="config.lang">
+            <img v-if="config.logo && config.logo.active && config.logo.src" :src="config.logo.src"/>
+            <h2>{{config.lang && config.lang.header}}</h2>
+            <input v-model="password" :placeholder="config.lang && config.lang.placeholder">
+            <div class="errortext" v-if="error && config.lang">{{error}} ({{config.lang.maxattempts - attempts}} {{config.lang.attemptleft}})</div>
+
+            <button @click="checkPassword()">{{config.lang && config.lang.button}}</button>
+          </div>
+      </div>
+    </div>
+  </body>
+</html>
+
+<!-- Import your JS and JS Vendor (vue.js) -->
+<script src="https://unpkg.com/vue@3.1.1/dist/vue.global.prod.js"></script> 
+<script src="app.js"></script>

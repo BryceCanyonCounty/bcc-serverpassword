@@ -4,22 +4,28 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 lua54 'yes'
 
-
 author 'Bytesizd'
-description 'Redm, NUI, Vuejs boilerplate'
+description 'Protect your servers with a password on join!'
+
+server_script {
+    'server/config.lua',
+    'server/server.lua'
+}
 
 client_script {
     'client/client.lua'
 }
 
-ui_page {
-    "ui/shim.html"
+shared_script {
+    'config.lua'
 }
 
 files {
-    "ui/shim.html",
-    "ui/dist/js/*.*",
-    "ui/dist/css/*.*"
+    'ui/*',
+    'ui/assets/*',
+    'ui/assets/fonts/*'
 }
+    
+ui_page 'ui/index.html'
 
 version '1.0.0'
