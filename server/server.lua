@@ -1,4 +1,5 @@
-local players = {}
+DeferralCards = exports['bcc-deferralcards']
+local states = {}
 
 local createTable = function()
     local result = exports.ghmattimysql:executeSync([[
@@ -11,13 +12,14 @@ local createTable = function()
         ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
     ]])
     if result and result.warningStatus > 1 then
-        print("ERROR: Failed to create bccpassword Table")
+        print("ERROR: Failed to create Table")
     end
 end
 
 Citizen.CreateThread(function()
     createTable()
 end)
+
 
 local GetSteamID = function(src)
     local sid = GetPlayerIdentifiers(src)[1] or false
@@ -29,126 +31,119 @@ local GetSteamID = function(src)
     return sid
 end
 
-local function KickPlayer(_src, kicks, steamid, lang) 
-    DropPlayer(_src, lang)
-    kicks = kicks + 1
-
-
-    local timeout = os.time() + (ServerConfig.TimeoutMinutes * 60)
-
-    exports.ghmattimysql:executeSync("UPDATE bccpassword SET `kicks` = ?, `timeout` = ? WHERE `cname` = ?", {kicks, timeout, steamid })
+function KickPlayer(s) 
+    local steamid = GetSteamID(_src)
+    local timeout = os.time() + (Config.TimeoutMinutes * 60)
+    states[s].kicks = states[s].kicks + 1
+    exports.ghmattimysql:executeSync("UPDATE bccpassword SET `kicks` = ?, `timeout` = ? WHERE `cname` = ?", {states[s].kicks, timeout, steamid })
 end
 
-local function initiate(_src)
-    local running = true
-    local kicktime = ServerConfig.TimeToKick
-    local current = 0
-    local s = tonumber(_src)
-    local steamid = GetSteamID(_src)
+function PresentError(s, deferral, cb)
+    states[s].current = 'error'
 
-    local curplayer = exports.ghmattimysql:executeSync( "SELECT * FROM bccpassword WHERE cname=@id;", {['@id'] = steamid})
-    local kicks = 0
-    if curplayer[1] then
-        kicks = curplayer[1].kicks
-    else
-        exports.ghmattimysql:executeSync("INSERT INTO bccpassword (cname, kicks) VALUES (@cname, @kicks)", {['@cname'] = steamid, ['@kicks']=0})
-    end
-
-    if players[s] == nil then
-        players[s] = {
-            attempts = 0,
-            kicks = kicks,
-            passed = false,
-            reset = false
+    local card = DeferralCards.Card:Create({
+        body = {
+            DeferralCards.Container:Create({
+                items = {
+                    DeferralCards.CardElement:Image({
+                        url = 'https://user-images.githubusercontent.com/10902965/191680366-63669ad2-ad7b-4dbe-8e40-b880beeaec5f.png',
+                        size = 'large',
+                        horizontalAlignment = 'center'
+                    }),
+                    DeferralCards.CardElement:TextBlock({
+                        text = Config.lang.error,
+                        weight = 'bold',
+                        size = 'large',
+                        horizontalAlignment = 'center'
+                    }),
+                    DeferralCards.Container:ActionSet({
+                        actions = {
+                            DeferralCards.Action:Submit({
+                                id = 'back_button',
+                                title = Config.lang.back
+                            })
+                        }
+                    })
+                },
+                isVisible = true
+            })
         }
-    end
+    })
 
-    Citizen.CreateThread(function()
-        while running do
-            Wait(1000)
-            current = current + 1        
-            
-            if kicktime == nil then
-                kicktime = 0
-            end
+    deferral.presentCard(card, function(data, rawData)
+        if data.submitId == 'back_button' then 
+            PresentLogin(s, deferral, cb)
+        end
+    end)
+end
 
-            if current >= kicktime then
-                KickPlayer(_src, players[s].kicks, steamid, Config.lang.notime)
-                running = false
-            elseif players[s].reset then
-                players[s].reset = false
-                current = 0
-            elseif players[s].passed then
-                running = false
+function PresentLogin(s, deferral, cb)
+    states[s].current = 'login'
+
+    local card = DeferralCards.Card:Create({
+        body = {
+            DeferralCards.Container:Create({
+                items = {
+                    DeferralCards.CardElement:Image({
+                        url = Config.logo,
+                        size = 'large',
+                        horizontalAlignment = 'center'
+                    }),
+                    DeferralCards.CardElement:TextBlock({
+                        text = Config.lang.header,
+                        weight = 'Light',
+                        size = 'large',
+                        horizontalAlignment = 'center'
+                    }),
+                    DeferralCards.Input:Text({
+                        id = 'password',
+                        title = '',
+                        placeholder = Config.lang.placeholder
+                    }),
+                    DeferralCards.Container:ActionSet({
+                        actions = {
+                            DeferralCards.Action:Submit({
+                                id = 'submit_join',
+                                title = Config.lang.button
+                            })
+                        }
+                    })
+                },
+                isVisible = true
+            })
+        }
+    })
+
+
+    deferral.presentCard(card, function(data, rawData)
+        if data.submitId == 'submit_join' then 
+            if Config.Password == data.password then
+                deferral.update(Config.lang.connecting)
+                Wait(1000)
+                deferral.done()
+                cb()
+            else         
+                states[s].attempts = states[s].attempts + 1
+                PresentError(s, deferral, cb)
             end
         end
     end)
 end
 
-AddEventHandler('playerDropped', function(reason)
-    local _src = source
-    players[tonumber(_src)].passed = true
-end)
 
-RegisterServerEvent('bccac:initiate')
-AddEventHandler('bccac:initiate', function()
-    local _src = source
-    initiate(_src)
-end)
+AddEventHandler('playerConnecting', function(name, skr, deferral)
+    deferral.defer()
 
-RegisterServerEvent('bccac:ispass')
-AddEventHandler('bccac:ispass', function(cpass)
-    local _src = source
-    local s = tonumber(_src)
-    local steamid = GetSteamID(_src)
-
-    local curplayer = exports.ghmattimysql:executeSync( "SELECT * FROM bccpassword WHERE cname=@id;", {['@id'] = steamid})
-    local kicks = 0
-    if curplayer[1] then
-        kicks = curplayer[1].kicks
-    else
-        exports.ghmattimysql:executeSync("INSERT INTO bccpassword (cname, kicks) VALUES (@cname, @kicks)", {['@cname'] = steamid, ['@kicks']=0})
-    end
-
-    if players[s] == nil then
-        players[s] = {
-            attempts = 0,
-            kicks = kicks,
-            passed = false,
-            reset = false
-        }
-    end
-
-    players[s].kicks = kicks
-    players[s].attempts = players[s].attempts + 1
-    if cpass == ServerConfig.Password then
-        -- The correct password has been entered
-        players[s].passed = true
-        TriggerClientEvent('bccac:ispass:cr', _src, true, players[s].attempts)
-    else
-        -- incorrect password has been entered
-        if players[s].attempts > ServerConfig.Attempts-1 then
-            -- Player has exceeded the allowed attempts. Kick them
-            KickPlayer(_src, players[s].kicks, steamid, Config.lang.kick)
-        else
-            -- User has not hit limit yet, let's let them retry
-            players[s].reset = true
-            TriggerClientEvent('bccac:ispass:cr', _src, false, players[s].attempts)
-        end
-    end
-end)
-
-AddEventHandler("playerConnecting", function(name, setMessage, deferrals)
-    deferrals.defer()
-    deferrals.update('checking bans...')
     local _src = source
     local steamid = GetSteamID(_src)
     local s = tonumber(_src)
+    Wait(50)
 
     if s == nil then
         deferrals.done('Account not found')
         CancelEvent()
     else
+
         local curplayer = exports.ghmattimysql:executeSync( "SELECT * FROM bccpassword WHERE cname=@id;", {['@id'] = steamid})
         local kicks = 0
         local timeout = nil
@@ -159,18 +154,44 @@ AddEventHandler("playerConnecting", function(name, setMessage, deferrals)
             exports.ghmattimysql:executeSync("INSERT INTO bccpassword (cname, kicks) VALUES (@cname, @kicks)", {['@cname'] = steamid, ['@kicks']=0})
         end
 
-        if kicks >= ServerConfig.KicksToBan then
+        states[_src] = {
+            current = 'login',
+            kicks = kicks,
+            timeout = timeout,
+            attempts = 0
+        }
+
+        if kicks >= Config.KicksToBan then
             deferrals.done(Config.lang.banned)
             CancelEvent()
-        elseif timeout ~= nil then
-            if tonumber(timeout) > os.time() then
-                deferrals.done(Config.lang.timeout)
-                CancelEvent()
-            else
-                deferrals.done()
-            end        
+        elseif timeout ~= nil and tonumber(timeout) > os.time() then
+            deferrals.done(Config.lang.timeout)
+            CancelEvent()      
         else
-            deferrals.done()
+            CreateThread(function()
+                local breakLoop = false
+                while true do
+                    if states[_src].attempts > Config.Attempts-1 then
+                        KickPlayer(_src)
+                        deferrals.done(Config.lang.kick)
+                        breakLoop = true
+                        CancelEvent()
+                    else
+                        if states[_src].current == 'login' then
+                            PresentLogin(_src, deferral, function()
+                                breakLoop = true
+                            end)
+                        else
+                            PresentError(_src, deferral, function()
+                                breakLoop = true
+                            end)
+                        end
+                    end
+    
+                    if breakLoop then break end
+                    Wait(1000)
+                end
+            end)
         end
     end
 end)
