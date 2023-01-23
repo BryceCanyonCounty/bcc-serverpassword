@@ -1,4 +1,4 @@
-DeferralCards = exports['bcc-deferralcards']
+DeferralCards = exports['bcc-deferralcards'].DeferralCards()
 local states = {}
 
 local createTable = function()

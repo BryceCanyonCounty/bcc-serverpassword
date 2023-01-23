@@ -1,8 +1,6 @@
 # BCC-ServerPassword
 > Protect your servers with a password on join!
 
-![image](https://user-images.githubusercontent.com/10902965/195976747-da04ff97-3bcf-49d2-bf28-6718a615824e.png)
-
 ## Features
 - Case Sentative Server-Side Password
 - Kick timer (Players cannot sit on the login page longer than x seconds)
@@ -11,8 +9,11 @@
 
 ### Install
 * Download this repo
+* Download the required [bcc-deferralcards](https://github.com/BryceCanyonCounty/bcc-deferralcards)
 * Copy and paste `bcc-serverpassword` folder to `resources/bcc-serverpassword`
+* Copy and paste `bcc-deferralcards` folder to `resources/bcc-deferralcards`
 * Open Project in terminal.
+* Add `ensure bcc-deferralcards` to your `server.cfg` file
 * Add `ensure bcc-serverpassword` to your `server.cfg` file
 * Now you are ready to get coding!
 
