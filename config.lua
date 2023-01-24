@@ -16,5 +16,6 @@ Config.lang = {
     error = "Password was incorrect",
     kick = 'Invalid Password',
     timeout = 'You have been timed out. Please wait 5 minutes before connecting again.',
-    banned = 'You have banned.'
+    banned = 'You have been banned.',
+    notfound = "Account not found",
 }

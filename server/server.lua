@@ -31,8 +31,8 @@ local GetSteamID = function(src)
     return sid
 end
 
-function KickPlayer(s) 
-    local steamid = GetSteamID(_src)
+function KickPlayer(s)
+    local steamid = GetSteamID(s)
     local timeout = os.time() + (Config.TimeoutMinutes * 60)
     states[s].kicks = states[s].kicks + 1
     exports.ghmattimysql:executeSync("UPDATE bccpassword SET `kicks` = ?, `timeout` = ? WHERE `cname` = ?", {states[s].kicks, timeout, steamid })
@@ -46,7 +46,7 @@ function PresentError(s, deferral, cb)
             DeferralCards.Container:Create({
                 items = {
                     DeferralCards.CardElement:Image({
-                        url = 'https://user-images.githubusercontent.com/10902965/191680366-63669ad2-ad7b-4dbe-8e40-b880beeaec5f.png',
+                        url = Config.logo,
                         size = 'large',
                         horizontalAlignment = 'center'
                     }),
@@ -140,10 +140,9 @@ AddEventHandler('playerConnecting', function(name, skr, deferral)
     Wait(50)
 
     if s == nil then
-        deferrals.done('Account not found')
+        deferral.done(Config.lang.notfound)
         CancelEvent()
     else
-
         local curplayer = exports.ghmattimysql:executeSync( "SELECT * FROM bccpassword WHERE cname=@id;", {['@id'] = steamid})
         local kicks = 0
         local timeout = nil
@@ -162,18 +161,18 @@ AddEventHandler('playerConnecting', function(name, skr, deferral)
         }
 
         if kicks >= Config.KicksToBan then
-            deferrals.done(Config.lang.banned)
+            deferral.done(Config.lang.banned)
             CancelEvent()
         elseif timeout ~= nil and tonumber(timeout) > os.time() then
-            deferrals.done(Config.lang.timeout)
-            CancelEvent()      
+            deferral.done(Config.lang.timeout)
+            CancelEvent()    
         else
             CreateThread(function()
                 local breakLoop = false
                 while true do
                     if states[_src].attempts > Config.Attempts-1 then
                         KickPlayer(_src)
-                        deferrals.done(Config.lang.kick)
+                        deferral.done(Config.lang.kick)
                         breakLoop = true
                         CancelEvent()
                     else
