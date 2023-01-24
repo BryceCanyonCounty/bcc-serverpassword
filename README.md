@@ -1,6 +1,8 @@
 # BCC-ServerPassword
 > Protect your servers with a password on join!
 
+![image](https://user-images.githubusercontent.com/10902965/214179579-e49e23cd-39b1-4c2d-be66-b4c45f64aa90.png)
+
 ## Features
 - Case Sentative Server-Side Password
 - Kick timer (Players cannot sit on the login page longer than x seconds)
