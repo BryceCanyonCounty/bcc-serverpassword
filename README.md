@@ -20,7 +20,7 @@
 * Now you are ready to get coding!
 
 ## Need More Support? 
-- [Vorp Disord](https://discord.gg/DHGVAbCj7N)
+- [BCC Discord](https://discord.gg/cQMJaTqcqJ)
 
 ## Requirements
 - NONE! It's standalone.
