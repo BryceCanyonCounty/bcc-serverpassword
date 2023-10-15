@@ -19,3 +19,5 @@ Config.lang = {
     banned = 'You have been banned.',
     notfound = "Account not found",
 }
+
+Config.skipGroup = {'owner','admin'} -- Add groups that ignore authentication

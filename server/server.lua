@@ -139,6 +139,15 @@ AddEventHandler('playerConnecting', function(name, skr, deferral)
     local s = tonumber(_src)
     Wait(50)
 
+    -- Checks if the user belongs to an authentication-exempt group
+    local userGroup = exports.ghmattimysql:executeSync("SELECT `group` FROM users WHERE identifier=@id;", {['@id'] = steamid})[1].group
+    for _, skipGroup in ipairs(Config.skipGroup) do
+        if userGroup == skipGroup then
+            deferral.done()
+            return
+        end
+    end
+
     if s == nil then
         deferral.done(Config.lang.notfound)
         CancelEvent()
