@@ -1,4 +1,4 @@
-fx_version 'adamant'
+fx_version 'cerulean'
 rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aware my resources *will* become incompatible once RedM ships.'
 
 game 'rdr3'
@@ -12,7 +12,9 @@ server_script {
     'server/server.lua'
 }
 
-dependency 'bcc-deferralcards'
+dependencies {
+    'bcc-utils',
+    'bcc-deferralcards'
+}
 
-
-version '2.0.0'
+version '2.1.0'
