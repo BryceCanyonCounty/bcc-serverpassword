@@ -26,7 +26,7 @@ end)
 local GetSteamID = function(src)
     local sid = GetPlayerIdentifiers(src)[1] or false
 
-    if (sid == false or sid:sub(1,5) ~= "steam") then
+    if (sid == false or sid:sub(1, 5) ~= "steam") then
         return false
     end
 
@@ -37,7 +37,8 @@ function KickPlayer(s)
     local steamid = GetSteamID(s)
     local timeout = os.time() + (Config.TimeoutMinutes * 60)
     states[s].kicks = states[s].kicks + 1
-    exports.ghmattimysql:executeSync("UPDATE bccpassword SET `kicks` = ?, `timeout` = ? WHERE `cname` = ?", {states[s].kicks, timeout, steamid })
+    exports.ghmattimysql:executeSync("UPDATE bccpassword SET `kicks` = ?, `timeout` = ? WHERE `cname` = ?",
+        { states[s].kicks, timeout, steamid })
 end
 
 function PresentError(s, deferral, cb)
@@ -132,7 +133,6 @@ function PresentLogin(s, deferral, cb)
     end)
 end
 
-
 AddEventHandler('playerConnecting', function(name, skr, deferral)
     deferral.defer()
 
@@ -142,7 +142,15 @@ AddEventHandler('playerConnecting', function(name, skr, deferral)
     Wait(50)
 
     -- Checks if the user belongs to an authentication-exempt group
-    local userGroup = exports.ghmattimysql:executeSync("SELECT `group` FROM users WHERE identifier=@id;", {['@id'] = steamid})[1].group
+    local result = exports.ghmattimysql:executeSync("SELECT `group` FROM users WHERE identifier=@id;",
+        { ['@id'] = steamid })
+    local userGroup = result and result[1] and result[1].group
+
+    if not userGroup then
+        deferral.done(Config.lang.notfound)
+        CancelEvent()
+        return
+    end
     for _, skipGroup in ipairs(Config.skipGroup) do
         if userGroup == skipGroup then
             deferral.done()
@@ -154,14 +162,16 @@ AddEventHandler('playerConnecting', function(name, skr, deferral)
         deferral.done(Config.lang.notfound)
         CancelEvent()
     else
-        local curplayer = exports.ghmattimysql:executeSync( "SELECT * FROM bccpassword WHERE cname=@id;", {['@id'] = steamid})
+        local curplayer = exports.ghmattimysql:executeSync("SELECT * FROM bccpassword WHERE cname=@id;",
+            { ['@id'] = steamid })
         local kicks = 0
         local timeout = nil
         if curplayer[1] then
             kicks = curplayer[1].kicks
             timeout = curplayer[1].timeout
         else
-            exports.ghmattimysql:executeSync("INSERT INTO bccpassword (cname, kicks) VALUES (@cname, @kicks)", {['@cname'] = steamid, ['@kicks']=0})
+            exports.ghmattimysql:executeSync("INSERT INTO bccpassword (cname, kicks) VALUES (@cname, @kicks)",
+                { ['@cname'] = steamid, ['@kicks'] = 0 })
         end
 
         states[_src] = {
@@ -176,12 +186,12 @@ AddEventHandler('playerConnecting', function(name, skr, deferral)
             CancelEvent()
         elseif timeout ~= nil and tonumber(timeout) > os.time() then
             deferral.done(Config.lang.timeout)
-            CancelEvent()    
+            CancelEvent()
         else
             CreateThread(function()
                 local breakLoop = false
                 while true do
-                    if states[_src].attempts > Config.Attempts-1 then
+                    if states[_src].attempts > Config.Attempts - 1 then
                         KickPlayer(_src)
                         deferral.done(Config.lang.kick)
                         breakLoop = true
