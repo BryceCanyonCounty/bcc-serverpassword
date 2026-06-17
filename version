@@ -1,3 +1,3 @@
-<2.1.0>
-- Password bypass for specified groups
-- Version check for updates
+<2.1.1>
+- Check if userGroup exists before accessing userGroup.group
+- Add a fallback message if the user is not found in the database
